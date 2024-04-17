@@ -1,6 +1,7 @@
 ﻿using L3WebApi.Business.Interfaces;
 using L3WebApi.Common.DAO;
 using L3WebApi.Common.DTO;
+using L3WebApi.Common.Requests;
 using L3WebApi.DataAccess.Interfaces;
 
 namespace L3WebApi.Business.Implementations {
@@ -32,6 +33,34 @@ namespace L3WebApi.Business.Implementations {
 		public async Task<IEnumerable<GameDto>> SearchByName(string name) {
 			return (await _gameDataAccess.SearchByName(name))
 				.Select(gameDao => gameDao.ToDto());
+		}
+
+		public async Task<GameDto> Create(GameCreationRequest request) {
+			if (request == null) {
+				throw new InvalidDataException("Erreur inconnue");
+			}
+
+			// TODO: check name duplications
+
+			if (string.IsNullOrWhiteSpace(request.Name)) {
+				throw new InvalidDataException("Erreur: Nom vide");
+			}
+
+			if (string.IsNullOrWhiteSpace(request.Description)) {
+				throw new InvalidDataException("Erreur: Description vide");
+			}
+
+			if (request.Description.Length < 10) {
+				throw new InvalidDataException(
+					"Erreur: Description doit être >= à 10 caracteres"
+				);
+			}
+
+			if (string.IsNullOrWhiteSpace(request.Logo)) {
+				throw new InvalidDataException("Erreur: Logo vide");
+			}
+
+			return (await _gameDataAccess.Create(request)).ToDto();
 		}
 	}
 }
