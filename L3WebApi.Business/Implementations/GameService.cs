@@ -35,6 +35,24 @@ namespace L3WebApi.Business.Implementations {
 				.Select(gameDao => gameDao.ToDto());
 		}
 
+		private void CheckDescription(string description) {
+			if (string.IsNullOrWhiteSpace(description)) {
+				throw new InvalidDataException("Erreur: Description vide");
+			}
+
+			if (description.Length < 10) {
+				throw new InvalidDataException(
+					"Erreur: Description doit être >= à 10 caracteres"
+				);
+			}
+		}
+
+		private void CheckLogo(string logo) {
+			if (string.IsNullOrWhiteSpace(logo)) {
+				throw new InvalidDataException("Erreur: Logo vide");
+			}
+		}
+
 		public async Task<GameDto> Create(GameCreationRequest request) {
 			if (request == null) {
 				throw new InvalidDataException("Erreur inconnue");
@@ -46,21 +64,25 @@ namespace L3WebApi.Business.Implementations {
 				throw new InvalidDataException("Erreur: Nom vide");
 			}
 
-			if (string.IsNullOrWhiteSpace(request.Description)) {
-				throw new InvalidDataException("Erreur: Description vide");
-			}
-
-			if (request.Description.Length < 10) {
-				throw new InvalidDataException(
-					"Erreur: Description doit être >= à 10 caracteres"
-				);
-			}
-
-			if (string.IsNullOrWhiteSpace(request.Logo)) {
-				throw new InvalidDataException("Erreur: Logo vide");
-			}
+			CheckDescription(request.Description);
+			CheckLogo(request.Logo);
 
 			return (await _gameDataAccess.Create(request)).ToDto();
+		}
+
+		public async Task Update(GameUpdateRequest gameUpdateRequest) {
+			var game = await _gameDataAccess.GetGameById(gameUpdateRequest.Id);
+			if (game is null) {
+				throw new InvalidDataException("Erreur: jeu inexistant!");
+			}
+
+			CheckDescription(gameUpdateRequest.Description);
+			CheckLogo(gameUpdateRequest.Logo);
+
+			game.Description = gameUpdateRequest.Description;
+			game.Logo = gameUpdateRequest.Logo;
+
+			await _gameDataAccess.SaveChanges();
 		}
 	}
 }

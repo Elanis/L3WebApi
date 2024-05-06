@@ -37,5 +37,9 @@ namespace L3WebApi.DataAccess.Implementations {
 
 			return await GetGameById(id);
 		}
+
+		public async Task SaveChanges() {
+			// Rien
+		}
 	}
 }

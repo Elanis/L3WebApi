@@ -7,5 +7,6 @@ namespace L3WebApi.DataAccess.Interfaces {
 		Task<GameDao?> GetGameById(int id);
 		Task<IEnumerable<GameDao>> SearchByName(string name);
 		Task<GameDao> Create(GameCreationRequest request);
+		Task SaveChanges();
 	}
 }
