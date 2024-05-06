@@ -1,38 +1,45 @@
 ﻿using L3WebApi.Business.Interfaces;
-using L3WebApi.Common.DAO;
 using L3WebApi.Common.DTO;
 using L3WebApi.Common.Requests;
 using L3WebApi.DataAccess.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace L3WebApi.Business.Implementations {
 	public class GameService : IGameService {
 		private readonly IGamesDataAccess _gameDataAccess;
-		public GameService(IGamesDataAccess gameDataAccess) {
+		private readonly ILogger<GameService> _logger;
+		public GameService(ILogger<GameService> logger, IGamesDataAccess gameDataAccess) {
+			_logger = logger;
 			_gameDataAccess = gameDataAccess;
 		}
 
 		public async Task<IEnumerable<GameDto>> GetGames() {
-			return (await _gameDataAccess.GetGames())
-				.Select(gameDao => gameDao.ToDto());
+			try {
+				return (await _gameDataAccess.GetGames())
+					.Select(gameDao => gameDao.ToDto());
+			} catch (Exception e) {
+				_logger.LogError(e, e.Message);
+				throw;
+			}
 		}
 
 		public async Task<GameDto?> GetGameById(int id) {
-			/*var game = await _gameDataAccess.GetGameById(id);
-			if (game == null) {
-				return null;
+			try {
+				return (await _gameDataAccess.GetGameById(id))?.ToDto();
+			} catch (Exception e) {
+				_logger.LogError(e, e.Message);
+				throw;
 			}
-
-			return game.ToDto();
-
-			==
-
-			*/
-			return (await _gameDataAccess.GetGameById(id))?.ToDto();
 		}
 
 		public async Task<IEnumerable<GameDto>> SearchByName(string name) {
-			return (await _gameDataAccess.SearchByName(name))
-				.Select(gameDao => gameDao.ToDto());
+			try {
+				return (await _gameDataAccess.SearchByName(name))
+					.Select(gameDao => gameDao.ToDto());
+			} catch (Exception e) {
+				_logger.LogError(e, e.Message);
+				throw;
+			}
 		}
 
 		private void CheckDescription(string description) {
@@ -54,44 +61,59 @@ namespace L3WebApi.Business.Implementations {
 		}
 
 		public async Task<GameDto> Create(GameCreationRequest request) {
-			if (request == null) {
-				throw new InvalidDataException("Erreur inconnue");
+			try {
+				if (request == null) {
+					throw new InvalidDataException("Erreur inconnue");
+				}
+
+				// TODO: check name duplications
+
+				if (string.IsNullOrWhiteSpace(request.Name)) {
+					throw new InvalidDataException("Erreur: Nom vide");
+				}
+
+				CheckDescription(request.Description);
+				CheckLogo(request.Logo);
+
+				return (await _gameDataAccess.Create(request)).ToDto();
+			} catch (Exception e) {
+				_logger.LogError(e, e.Message);
+				throw;
 			}
-
-			// TODO: check name duplications
-
-			if (string.IsNullOrWhiteSpace(request.Name)) {
-				throw new InvalidDataException("Erreur: Nom vide");
-			}
-
-			CheckDescription(request.Description);
-			CheckLogo(request.Logo);
-
-			return (await _gameDataAccess.Create(request)).ToDto();
 		}
 
 		public async Task Update(GameUpdateRequest gameUpdateRequest) {
-			var game = await _gameDataAccess.GetGameById(gameUpdateRequest.Id);
-			if (game is null) {
-				throw new InvalidDataException("Erreur: jeu inexistant!");
+			try {
+				var game = await _gameDataAccess.GetGameById(gameUpdateRequest.Id);
+				if (game is null) {
+					throw new InvalidDataException("Erreur: jeu inexistant!");
+				}
+
+				CheckDescription(gameUpdateRequest.Description);
+				CheckLogo(gameUpdateRequest.Logo);
+
+				game.Description = gameUpdateRequest.Description;
+				game.Logo = gameUpdateRequest.Logo;
+
+				await _gameDataAccess.SaveChanges();
+			} catch (Exception e) {
+				_logger.LogError(e, e.Message);
+				throw;
 			}
-
-			CheckDescription(gameUpdateRequest.Description);
-			CheckLogo(gameUpdateRequest.Logo);
-
-			game.Description = gameUpdateRequest.Description;
-			game.Logo = gameUpdateRequest.Logo;
-
-			await _gameDataAccess.SaveChanges();
 		}
 
 		public async Task Delete(int id) {
-			var game = await _gameDataAccess.GetGameById(id);
-			if (game is null) {
-				throw new InvalidDataException("Erreur: jeu inexistant!");
-			}
+			try {
+				var game = await _gameDataAccess.GetGameById(id);
+				if (game is null) {
+					throw new InvalidDataException("Erreur: jeu inexistant!");
+				}
 
-			await _gameDataAccess.Remove(id);
+				await _gameDataAccess.Remove(id);
+			} catch (Exception e) {
+				_logger.LogError(e, e.Message);
+				throw;
+			}
 		}
 	}
 }
