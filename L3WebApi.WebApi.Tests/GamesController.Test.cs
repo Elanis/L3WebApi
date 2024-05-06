@@ -114,17 +114,103 @@ namespace L3WebApi.WebApi.Tests {
 			await ShouldGet200_GET_SearchByName("a", 2); // Zelda + test_de_creation
 		}
 
+		public static IEnumerable<object[]> GetCreateSchemas() {
+			var data = new List<object[]>();
+			data.Add(new object[] {
+				new GameCreationRequest {
+						Name = "test",
+						Description = "un",
+						Logo = "http://domain.tld/logo.png"
+				},
+				"Erreur: Description doit être >= à 10 caracteres"
+			});
+
+			data.Add(new object[] {
+				new GameCreationRequest {
+						Name = "test",
+						Description = " ",
+						Logo = "http://domain.tld/logo.png"
+				},
+				"Erreur: Description vide"
+			});
+
+			return data;
+		}
+
+		[Theory]
+		[MemberData(nameof(GetCreateSchemas))]
+		public async void ShouldGet400_POST_Create(GameCreationRequest game, string error) {
+			var response = await CreateGame(game);
+			response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+			(await response.Content.ReadAsStringAsync()).Should().Be(error);
+		}
+
+		private async Task<HttpResponseMessage> UpdateGame(GameUpdateRequest game) {
+			var content = new StringContent(
+				JsonSerializer.Serialize(game),
+				Encoding.UTF8,
+				"application/json"
+			);
+
+			return await client.PostAsync("/api/Games/update", content);
+		}
+
+		public static IEnumerable<object[]> GetUpdateSchemas() {
+			var data = new List<object[]>();
+			data.Add(new object[] {
+				new GameUpdateRequest {
+						Id = 42,
+						Description = "un",
+						Logo = "http://domain.tld/logo.png"
+				},
+				"Erreur: jeu inexistant!"
+			});
+
+			data.Add(new object[] {
+				new GameUpdateRequest {
+						Id = 1,
+						Description = " ",
+						Logo = "http://domain.tld/logo.png"
+				},
+				"Erreur: Description vide"
+			});
+
+			return data;
+		}
+
+		[Theory]
+		[MemberData(nameof(GetUpdateSchemas))]
+		public async void ShouldGet400_POST_Update(GameUpdateRequest game, string error) {
+			var response = await UpdateGame(game);
+			response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+			(await response.Content.ReadAsStringAsync()).Should().Be(error);
+		}
+
 		[Fact]
-		public async void ShouldGet400_POST_Create() {
-			var game = new GameCreationRequest {
-				Name = "test",
-				Description = "un",
+		public async void ShouldGet200_POST_Update() {
+			var game = new GameUpdateRequest {
+				Id = 1,
+				Description = "Une description suffisament longue",
 				Logo = "http://domain.tld/logo.png"
 			};
 
-			var response = await CreateGame(game);
-			response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-			(await response.Content.ReadAsStringAsync()).Should().Be("Erreur: Description doit être >= à 10 caracteres");
+			var response = await UpdateGame(game);
+			response.StatusCode.Should().Be(HttpStatusCode.OK);
+		}
+
+		[Fact]
+		public async void ShouldGet200_POST_Delete() {
+			var game = new GameCreationRequest {
+				Name = "test_de_creation_25",
+				Description = "test de description plutôt longue",
+				Logo = "http://domain.tld/logo.png"
+			};
+
+			await CreateGame(game);
+
+			var id = 2;
+			var response = await client.PostAsync($"/api/Games/delete/{id}", new StringContent(""));
+			response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		}
 	}
 }
