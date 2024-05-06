@@ -41,5 +41,10 @@ namespace L3WebApi.DataAccess.Implementations {
 		public async Task SaveChanges() {
 			// Rien
 		}
+
+		public async Task Remove(int id) {
+			var game = await GetGameById(id);
+			AllGames.Remove(game);
+		}
 	}
 }

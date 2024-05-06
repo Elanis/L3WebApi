@@ -84,5 +84,14 @@ namespace L3WebApi.Business.Implementations {
 
 			await _gameDataAccess.SaveChanges();
 		}
+
+		public async Task Delete(int id) {
+			var game = await _gameDataAccess.GetGameById(id);
+			if (game is null) {
+				throw new InvalidDataException("Erreur: jeu inexistant!");
+			}
+
+			await _gameDataAccess.Remove(id);
+		}
 	}
 }
