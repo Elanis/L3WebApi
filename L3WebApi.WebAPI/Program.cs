@@ -1,7 +1,10 @@
 using L3WebApi.Business.Implementations;
 using L3WebApi.Business.Interfaces;
+using L3WebApi.Common;
+using L3WebApi.DataAccess;
 using L3WebApi.DataAccess.Implementations;
 using L3WebApi.DataAccess.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 using NLog.Web;
 
@@ -15,6 +18,19 @@ public class Program {
 
 		try {
 			var builder = WebApplication.CreateBuilder(args);
+
+			var rawConfig = new ConfigurationBuilder()
+				.SetBasePath(Directory.GetCurrentDirectory())
+				.AddEnvironmentVariables()
+				.AddJsonFile("appsettings.json")
+				.AddUserSecrets<Program>()
+				.Build();
+
+			var appSettingsSection = rawConfig.GetSection("AppSettings");
+			builder.Services.Configure<AppSettings>(appSettingsSection);
+
+			// Context
+			builder.Services.AddTransient<GameContext>();
 
 			// Add services to the container.
 			builder.Services.AddTransient<IGamesDataAccess, GamesDataAccess>();
@@ -30,6 +46,13 @@ public class Program {
 			builder.Host.UseNLog();
 
 			var app = builder.Build();
+
+			using (var scope = app.Services.CreateScope()) {
+				var dbContext = scope.ServiceProvider.GetRequiredService<GameContext>();
+
+				// Here is the migration executed
+				dbContext.Database.Migrate();
+			}
 
 			// Configure the HTTP request pipeline.
 			if (app.Environment.IsDevelopment()) {
