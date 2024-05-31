@@ -1,6 +1,7 @@
 ﻿using L3WebApi.Common.DAO;
 using L3WebApi.Common.Requests;
 using L3WebApi.DataAccess.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace L3WebApi.DataAccess.Implementations {
 	public class GamesDataAccess : IGamesDataAccess {
@@ -13,8 +14,8 @@ namespace L3WebApi.DataAccess.Implementations {
 			return _context.Games;
 		}
 
-		public async Task<GameDao?> GetGameById(int id) {
-			return _context.Games.FirstOrDefault(x => x.Id == id);
+		public Task<GameDao?> GetGameById(int id) {
+			return _context.Games.FirstOrDefaultAsync(x => x.Id == id);
 		}
 
 		public async Task<IEnumerable<GameDao>> SearchByName(string name) {
@@ -28,9 +29,9 @@ namespace L3WebApi.DataAccess.Implementations {
 				Logo = request.Logo,
 			});
 
-			_context.SaveChanges();
+			await _context.SaveChangesAsync();
 
-			return await GetGameById(newGame.Entity.Id);
+			return await GetGameById(newGame.Entity.Id) ?? throw new NullReferenceException("Erreur lors de la creation du jeu");
 		}
 
 		public Task SaveChanges() {
@@ -40,7 +41,7 @@ namespace L3WebApi.DataAccess.Implementations {
 		public async Task Remove(int id) {
 			var game = await GetGameById(id);
 			_context.Games.Remove(game);
-			_context.SaveChanges();
+			await _context.SaveChangesAsync();
 		}
 	}
 }
